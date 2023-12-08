@@ -6,11 +6,15 @@ import asyncio
 import time
 from ctypes import windll
 
-h_offset = 1380
-h_watch = 780
-w_watch = 1545
-w_offset = 1200
-height = 120
+y_offset = 1380
+x_offset = 1200
+y_watch = 1050
+x_watch = 1280
+tap_width = 1575
+width = 1180
+height = 180
+mul = tap_width / width
+target_interval = 1/10
 frame_cnt = 0
 hold = False
 
@@ -33,25 +37,21 @@ def find_color_range(rgb, color_lower = (205, 205, 205), color_upper = (255, 255
     
 def find_mean_val(coordinates):
     center = np.mean(coordinates, axis=0).astype(int)
-    center[0] = center[0]
-    center[1] = (center[1] * 2) + w_offset
+    center[0] = height - center[0]
+    center[1] = center[1] * mul + x_offset
     return center
 
 async def click_at_position(position):
-    await asyncio.sleep(0.14 + 0.001*(height-position[0]))
+    # await asyncio.sleep(0.00001 * position[0])
     pyautogui.mouseUp()
-    pyautogui.mouseDown(position[1], 1380)
-
-async def mouse_up(delay):
-    await asyncio.sleep(delay)
+    pyautogui.mouseDown(position[1], y_offset)
 
 async def task():
     global hold
-    target_interval = 1/15
     while True:
         start_time = time.time()
-        rgb = capture_screen((w_watch, h_watch, 700, height))
-        pos = find_color_range(rgb, (240, 240, 240), (255, 255, 255))
+        rgb = capture_screen((x_watch, y_watch, width, height))
+        pos = find_color_range(rgb, (240, 240, 200), (255, 255, 255))
         if pos is not None and len(pos) > 0:
             asyncio.create_task(click_at_position(pos))
             print("Clicking at:", pos)
@@ -61,6 +61,8 @@ async def task():
         await asyncio.sleep(sleep_time)
 
 def mainloop():
+    print(mul)
+    print(target_interval)
     asyncio.run(task())
 
 if __name__ == "__main__":
